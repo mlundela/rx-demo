@@ -13,7 +13,6 @@ import javafx.stage.Stage;
 import rx.Observable;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -30,38 +29,62 @@ public class Snake extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        setupScene(stage);
+        getStateObservable()
+                .observeOn(FxScheduler.getInstance())
+                .forEach(this::drawScene);
+    }
 
-        Canvas canvas = new Canvas(sceneWidth, sceneHeight);
-        gc = canvas.getGraphicsContext2D();
+    /**
+     * Exercise 1:
+     * Create an observable that emits key events.
+     * Hint: Use {@link rx.Observable#create}
+     *
+     * @return Observable that emits key events.
+     */
+    private Observable<KeyEvent> getKeyEvents() {
+        throw new RuntimeException("Not implemented yet");
+    }
 
-        Group root = new Group();
-        root.getChildren().add(canvas);
+    /**
+     * Exercise 2:
+     * Create an observable that emits a new tick every 80 millisecond.
+     *
+     * @return Ticks
+     */
+    private Observable<Long> getTicks() {
+        throw new RuntimeException("Not implemented yet");
+    }
 
-        stage.setTitle("RxSnake");
-        stage.setScene(new Scene(root));
-        stage.show();
+    /**
+     * Exercise 3:
+     * Combine the output from exercise 1 and 2 to create an observable
+     * that emits direction ticks.
+     *
+     * @return Direction ticks
+     */
+    private Observable<Direction> getDirectionTicks() {
+        throw new RuntimeException("Not implemented yet");
+    }
 
+    /**
+     * Exercise 4:
+     * Create an observable that emits the most recent game state.
+     * Hint: {@link #initialState} and {@link #updateState} might come in handy.
+     *
+     * @return Game state
+     */
+    private Observable<State> getStateObservable() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    private State initialState() {
         List<Point2D> snake = IntStream
                 .range(1, 5)
                 .mapToObj(x -> snakelet(sceneWidth / 2, sceneHeight / 2))
                 .collect(Collectors.toList());
 
-        State initialState = new State(ImmutableList.copyOf(snake), candy());
-
-        Observable<KeyEvent> keyEvents =
-                Observable.create(subscriber ->
-                                stage.addEventHandler(KeyEvent.KEY_PRESSED, subscriber::onNext)
-                );
-
-
-        Observable<Long> ticks = Observable.interval(80, TimeUnit.MILLISECONDS);
-
-        Observable<Direction> directionTicks = Observable.combineLatest(ticks, keyEvents.filter(this::isKeyEvent).map(this::toDirection), (t, d) -> d);
-
-        Observable<State> state = directionTicks.scan(initialState, this::updateState);
-
-        state.observeOn(FxScheduler.getInstance()).forEach(this::drawScene);
-
+        return new State(ImmutableList.copyOf(snake), candy());
     }
 
     private State updateState(State state, Direction direction) {
@@ -134,18 +157,6 @@ public class Snake extends Application {
         }
     }
 
-    private Boolean isKeyEvent(KeyEvent keyEvent) {
-        switch (keyEvent.getCode().toString()) {
-            case "UP":
-            case "DOWN":
-            case "LEFT":
-            case "RIGHT":
-                return true;
-            default:
-                return false;
-        }
-    }
-
     private Direction toDirection(KeyEvent e) {
         return Direction.valueOf(e.getCode().toString());
     }
@@ -169,5 +180,17 @@ public class Snake extends Application {
 
     private Point2D snakelet(int x, int y) {
         return new Point2D(x, y);
+    }
+
+    private void setupScene(Stage stage) {
+        Canvas canvas = new Canvas(sceneWidth, sceneHeight);
+        gc = canvas.getGraphicsContext2D();
+
+        Group root = new Group();
+        root.getChildren().add(canvas);
+
+        stage.setTitle("RxSnake");
+        stage.setScene(new Scene(root));
+        stage.show();
     }
 }
