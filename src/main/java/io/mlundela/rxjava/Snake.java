@@ -39,7 +39,7 @@ public class Snake extends Application {
     /**
      * Exercise 1:
      * Create an observable that emits key events.
-     * Hint: Use {@link rx.Observable#create}
+     * Hint: Use {@link rx.Observable#create} and {@link Stage#addEventHandler}
      *
      * @return Observable that emits key events.
      */
