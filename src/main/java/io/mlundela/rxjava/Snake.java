@@ -28,6 +28,10 @@ public class Snake extends Application {
     private GraphicsContext gc;
 
 
+    /**
+     * Bonus exercise:
+     * Display a 'GAME OVER' message when the snake collides with its self.
+     */
     @Override
     public void start(Stage stage) throws Exception {
         setupScene(stage);
