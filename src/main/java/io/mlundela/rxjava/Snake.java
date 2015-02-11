@@ -7,12 +7,16 @@ import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import rx.Observable;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -20,9 +24,8 @@ import java.util.stream.IntStream;
 
 public class Snake extends Application {
 
-    final int sceneWidth = 800;
-    final int sceneHeight = 600;
-    final int radius = 25;
+    final int size = 600;
+    final int radius = 30;
 
     private Stage stage;
     private GraphicsContext gc;
@@ -36,9 +39,7 @@ public class Snake extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         setupScene(stage);
-        getStateObservable()
-                .observeOn(FxScheduler.getInstance())
-                .forEach(this::drawScene);
+        states().forEach(this::drawScene);
     }
 
     /**
@@ -49,7 +50,9 @@ public class Snake extends Application {
      * @return Observable that emits key events.
      */
     private Observable<KeyEvent> getKeyEvents() {
-        throw new RuntimeException("Not implemented yet");
+        return Observable.create(subscriber ->
+                stage.addEventHandler(KeyEvent.KEY_PRESSED, subscriber::onNext));
+
     }
 
     /**
@@ -59,7 +62,7 @@ public class Snake extends Application {
      * @return Ticks
      */
     private Observable<Long> getTicks() {
-        throw new RuntimeException("Not implemented yet");
+        return Observable.interval(80, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -70,7 +73,7 @@ public class Snake extends Application {
      * @return Direction ticks
      */
     private Observable<Direction> getDirectionTicks() {
-        throw new RuntimeException("Not implemented yet");
+        return Observable.combineLatest(getTicks(), getKeyEvents().filter(this::isArrowKey).map(this::toDirection), (t, k) -> k);
     }
 
     /**
@@ -81,13 +84,13 @@ public class Snake extends Application {
      * @return Game state
      */
     private Observable<State> getStateObservable() {
-        throw new RuntimeException("Not implemented yet");
+        return getDirectionTicks().scan(initialState(), this::updateState);
     }
 
     private State initialState() {
         List<Point2D> snake = IntStream
                 .range(1, 5)
-                .mapToObj(x -> snakelet(sceneWidth / 2, sceneHeight / 2))
+                .mapToObj(x -> snakelet(size / 2, size / 2))
                 .collect(Collectors.toList());
 
         return new State(ImmutableList.copyOf(snake), candy());
@@ -96,6 +99,7 @@ public class Snake extends Application {
     private State updateState(State state, Direction direction) {
         return move()
                 .andThen(handleCollision())
+                .andThen(handleCollisionWithSelf())
                 .andThen(eatCandy())
                 .apply(state, direction);
     }
@@ -112,10 +116,19 @@ public class Snake extends Application {
         };
     }
 
+    private Function<State, State> handleCollisionWithSelf() {
+        return state -> {
+            Point2D head = state.snake.get(0);
+            if (state.snake.stream().skip(1).anyMatch(p -> p.getX() == head.getX() && p.getY() == head.getY())) {
+                throw new RuntimeException("Game over");
+            } else return state;
+        };
+    }
+
     private Function<State, State> handleCollision() {
         return state -> {
-            int x = (int) (sceneWidth + state.snake.get(0).getX()) % sceneWidth;
-            int y = (int) (sceneHeight + state.snake.get(0).getY()) % sceneHeight;
+            int x = (int) (size + state.snake.get(0).getX()) % size;
+            int y = (int) (size + state.snake.get(0).getY()) % size;
             ImmutableList<Point2D> snake = ImmutableList
                     .<Point2D>builder()
                     .add(snakelet(x, y))
@@ -142,11 +155,24 @@ public class Snake extends Application {
     }
 
     private void drawScene(State state) {
-        gc.clearRect(0, 0, sceneWidth, sceneHeight);
-        gc.setFill(Color.LIME);
+        gc.clearRect(0, 0, size, size);
+        gc.setFill(Color.GREENYELLOW);
         state.snake.stream().forEach(p -> gc.fillOval(p.getX(), p.getY(), radius, radius));
-        gc.setFill(Color.PINK);
+        gc.setFill(Color.RED);
         gc.fillOval(state.candy.getX(), state.candy.getY(), radius, radius);
+    }
+
+    private Observable<State> gameOver(Throwable t) {
+        gc.setFill(Color.GREY);
+        gc.setFont(Font.font("Helvetica", FontWeight.EXTRA_BOLD, 70));
+        gc.fillText("GAME OVER", size / 2 - 200, size / 2 + 35);
+        return states();
+    }
+
+    private Observable<State> states() {
+        return getStateObservable()
+                .observeOn(FxScheduler.getInstance())
+                .onErrorResumeNext(this::gameOver);
     }
 
     private Point2D shift(Direction direction) {
@@ -168,6 +194,13 @@ public class Snake extends Application {
         return Direction.valueOf(e.getCode().toString());
     }
 
+    private Boolean isArrowKey(KeyEvent keyEvent) {
+        return keyEvent.getCode() == KeyCode.UP ||
+                keyEvent.getCode() == KeyCode.DOWN ||
+                keyEvent.getCode() == KeyCode.LEFT ||
+                keyEvent.getCode() == KeyCode.RIGHT;
+    }
+
     class State {
 
         final ImmutableList<Point2D> snake;
@@ -180,8 +213,8 @@ public class Snake extends Application {
     }
 
     private Point2D candy() {
-        int x = (int) (radius + Math.random() * (sceneWidth - 2 * radius));
-        int y = (int) (radius + Math.random() * (sceneHeight - 2 * radius));
+        int x = (int) (radius + Math.random() * (size - 2 * radius));
+        int y = (int) (radius + Math.random() * (size - 2 * radius));
         return new Point2D(x - x % radius, y - y % radius);
     }
 
@@ -191,7 +224,7 @@ public class Snake extends Application {
 
     private void setupScene(Stage stage) {
         this.stage = stage;
-        Canvas canvas = new Canvas(sceneWidth, sceneHeight);
+        Canvas canvas = new Canvas(size, size);
         gc = canvas.getGraphicsContext2D();
 
         Group root = new Group();
