@@ -123,10 +123,11 @@ public class Snake extends Application {
     private Function<State, State> eatCandy() {
         return state -> {
             if (state.snake.get(0).distance(state.candy) < radius) {
+                Point2D tail = state.snake.get(state.snake.size() - 1);
                 ImmutableList<Point2D> snake = ImmutableList
                         .<Point2D>builder()
                         .addAll(state.snake)
-                        .add(state.snake.get(state.snake.size() - 1))
+                        .add(tail, tail)
                         .build();
                 return new State(snake, candy());
             } else {
