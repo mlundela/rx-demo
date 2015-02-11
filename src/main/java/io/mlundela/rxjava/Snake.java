@@ -24,6 +24,7 @@ public class Snake extends Application {
     final int sceneHeight = 600;
     final int radius = 25;
 
+    private Stage stage;
     private GraphicsContext gc;
 
 
@@ -43,7 +44,8 @@ public class Snake extends Application {
      * @return Observable that emits key events.
      */
     private Observable<KeyEvent> getKeyEvents() {
-        throw new RuntimeException("Not implemented yet");
+        return Observable.create(subscriber ->
+                stage.addEventHandler(KeyEvent.KEY_PRESSED, subscriber::onNext));
     }
 
     /**
@@ -183,6 +185,7 @@ public class Snake extends Application {
     }
 
     private void setupScene(Stage stage) {
+        this.stage = stage;
         Canvas canvas = new Canvas(sceneWidth, sceneHeight);
         gc = canvas.getGraphicsContext2D();
 
