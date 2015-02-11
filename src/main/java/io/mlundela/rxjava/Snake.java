@@ -44,8 +44,7 @@ public class Snake extends Application {
      * @return Observable that emits key events.
      */
     private Observable<KeyEvent> getKeyEvents() {
-        return Observable.create(subscriber ->
-                stage.addEventHandler(KeyEvent.KEY_PRESSED, subscriber::onNext));
+        throw new RuntimeException("Not implemented yet");
     }
 
     /**
