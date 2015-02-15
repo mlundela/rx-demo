@@ -30,7 +30,8 @@ public class Snake extends Application {
 
     /**
      * Bonus exercise:
-     * Display a 'GAME OVER' message when the snake collides with its self.
+     * Display a 'GAME OVER' message when the snake collides with its self,
+     * and start a new game when a new arrow key is pressed.
      */
     @Override
     public void start(Stage stage) throws Exception {
