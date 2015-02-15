@@ -37,5 +37,6 @@ Create an observable that emits the most recent game state.
 
 Bonus exercise:
 -----------
-Display a 'GAME OVER' message when the snake collides with its self.
+Display a 'GAME OVER' message when the snake collides with its self, and start a 
+new game when a new arrow key is pressed.
     
