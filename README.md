@@ -1,6 +1,10 @@
 RxSnake
 =======
 
+Your task is to complete the implementation of RxSnake. When all exercises are done, you should be able to play using your arrow keys to control the snake. The user interface is built with JavaFx, but all methods exept the ones that returns Observables are implemented for you.
+
+NB: RxJava's [documentation](https://github.com/ReactiveX/RxJava/wiki) will be useful!
+
 
 Exercise 1:
 -----------
