@@ -42,22 +42,33 @@ public class Snake extends Application {
         states().forEach(this::drawScene);
     }
 
-    /**
-     * Exercise 1:
-     * Create an observable that emits key events.
-     * Hint: Use {@link rx.Observable#create} and {@link Stage#addEventHandler}
-     *
-     * @return Observable that emits key events.
-     */
     private Observable<KeyEvent> getKeyEvents() {
         return Observable.create(subscriber ->
                 stage.addEventHandler(KeyEvent.KEY_PRESSED, subscriber::onNext));
+    }
 
+    /**
+     * Exercise 1:
+     * Create an observable that emits Directions.
+     * Hint: Use getKeyEvents, with filter and map.
+     *
+     * key-pressed: ---KEY_UP-----Ø--X---Y---------KEY_LEFT-----KEY_DOWN------------>
+     * directions:  ------UP-------------------------LEFT----------DOWN------------>
+     *
+     * @return Observable that emits key events.
+     */
+    private Observable<Direction> getDirections() {
+        return getKeyEvents()
+                .filter(this::isArrowKey)
+                .map(this::toDirection);
     }
 
     /**
      * Exercise 2:
      * Create an observable that emits a new tick every 80 millisecond.
+     *
+     *         0:08  0:16  0:24  0:32  0:40
+     * ticks: --0-----1-----2-----3-----4--->
      *
      * @return Ticks
      */
@@ -70,16 +81,25 @@ public class Snake extends Application {
      * Combine the output from exercise 1 and 2 to create an observable
      * that emits direction ticks.
      *
+     * ticks:      --0-----1-----2-----3-----4-----5-----6-----7----->
+     *
+     * directions: ----UP-----------------------LEFT----------------->
+     *
+     * result:     --------UP----UP----UP----UP--LEFT---LEFT--LEFT--->
+     *
      * @return Direction ticks
      */
     private Observable<Direction> getDirectionTicks() {
-        return Observable.combineLatest(getTicks(), getKeyEvents().filter(this::isArrowKey).map(this::toDirection), (t, k) -> k);
+        return Observable.combineLatest(getTicks(), getDirections(), (t, k) -> k);
     }
 
     /**
      * Exercise 4:
      * Create an observable that emits the most recent game state.
      * Hint: {@link #initialState} and {@link #updateState} might come in handy.
+     *
+     * direction ticks: --------UP----UP----UP----UP--LEFT--->
+     * state:           ---S0---S1----S2----S3----S4----S5--->
      *
      * @return Game state
      */
@@ -163,7 +183,7 @@ public class Snake extends Application {
     }
 
     private Observable<State> gameOver(Throwable t) {
-        gc.setFill(Color.GREY);
+        gc.setFill(Color.BLACK);
         gc.setFont(Font.font("Helvetica", FontWeight.EXTRA_BOLD, 70));
         gc.fillText("GAME OVER", size / 2 - 200, size / 2 + 35);
         return states();
