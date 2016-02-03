@@ -14,6 +14,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import rx.Observable;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -37,8 +39,8 @@ public class Snake extends Application {
      * and start a new game when a new arrow key is pressed.
      */
     @Override
-    public void start(Stage stage) throws Exception {
-        setupScene(stage);
+    public void start(Stage primaryStage) throws Exception {
+        setupScene(primaryStage);
         states().forEach(this::drawScene);
     }
 
@@ -50,17 +52,14 @@ public class Snake extends Application {
     /**
      * Exercise 1:
      * Create an observable that emits Directions.
-     * Hint: Use getKeyEvents, with filter and map.
      *
      * key-pressed: ---KEY_UP-----Ø--X---Y---------KEY_LEFT-----KEY_DOWN------------>
      * directions:  ------UP-------------------------LEFT----------DOWN------------>
      *
      * @return Observable that emits key events.
      */
-    private Observable<Direction> getDirections() {
-        return getKeyEvents()
-                .filter(this::isArrowKey)
-                .map(this::toDirection);
+    Observable<Direction> getDirections(Observable<KeyEvent> keyEvents) {
+        return keyEvents.filter(this::isArrowKey).map(this::toDirection);
     }
 
     /**
@@ -72,8 +71,8 @@ public class Snake extends Application {
      *
      * @return Ticks
      */
-    private Observable<Long> getTicks() {
-        return Observable.interval(80, TimeUnit.MILLISECONDS);
+    Observable<Long> getTicks(Scheduler scheduler) {
+        return Observable.interval(80, TimeUnit.MILLISECONDS, scheduler);
     }
 
     /**
@@ -89,8 +88,8 @@ public class Snake extends Application {
      *
      * @return Direction ticks
      */
-    private Observable<Direction> getDirectionTicks() {
-        return Observable.combineLatest(getTicks(), getDirections(), (t, k) -> k);
+    Observable<Direction> getDirectionTicks(Observable<Long> ticks, Observable<Direction> directions) {
+        return Observable.combineLatest(ticks, directions, (t, d) -> d);
     }
 
     /**
@@ -103,11 +102,11 @@ public class Snake extends Application {
      *
      * @return Game state
      */
-    private Observable<State> getStateObservable() {
-        return getDirectionTicks().scan(initialState(), this::updateState);
+    Observable<State> getStateObservable(Observable<Direction> directionTicks) {
+        return directionTicks.scan(initialState(), this::updateState);
     }
 
-    private State initialState() {
+    State initialState() {
         List<Point2D> snake = IntStream
                 .range(1, 5)
                 .mapToObj(x -> snakelet(size / 2, size / 2))
@@ -116,7 +115,7 @@ public class Snake extends Application {
         return new State(ImmutableList.copyOf(snake), candy());
     }
 
-    private State updateState(State state, Direction direction) {
+    State updateState(State state, Direction direction) {
         return move()
                 .andThen(handleCollision())
                 .andThen(handleCollisionWithSelf())
@@ -183,14 +182,11 @@ public class Snake extends Application {
     }
 
     private Observable<State> gameOver(Throwable t) {
-        gc.setFill(Color.BLACK);
-        gc.setFont(Font.font("Helvetica", FontWeight.EXTRA_BOLD, 70));
-        gc.fillText("GAME OVER", size / 2 - 200, size / 2 + 35);
         return states();
     }
 
     private Observable<State> states() {
-        return getStateObservable()
+        return getStateObservable(getDirectionTicks(getTicks(Schedulers.computation()), getDirections(getKeyEvents())))
                 .observeOn(FxScheduler.getInstance())
                 .onErrorResumeNext(this::gameOver);
     }
