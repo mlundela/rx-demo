@@ -59,7 +59,7 @@ public class Snake extends Application {
      * @return Observable that emits key events.
      */
     Observable<Direction> getDirections(Observable<KeyEvent> keyEvents) {
-        return keyEvents.filter(this::isArrowKey).map(this::toDirection);
+        return Observable.empty();
     }
 
     /**
@@ -72,7 +72,7 @@ public class Snake extends Application {
      * @return Ticks
      */
     Observable<Long> getTicks(Scheduler scheduler) {
-        return Observable.interval(80, TimeUnit.MILLISECONDS, scheduler);
+        return Observable.empty();
     }
 
     /**
@@ -89,7 +89,7 @@ public class Snake extends Application {
      * @return Direction ticks
      */
     Observable<Direction> getDirectionTicks(Observable<Long> ticks, Observable<Direction> directions) {
-        return Observable.combineLatest(ticks, directions, (t, d) -> d);
+        return Observable.empty();
     }
 
     /**
@@ -103,7 +103,7 @@ public class Snake extends Application {
      * @return Game state
      */
     Observable<State> getStateObservable(Observable<Direction> directionTicks) {
-        return directionTicks.scan(initialState(), this::updateState);
+        return Observable.empty();
     }
 
     State initialState() {
