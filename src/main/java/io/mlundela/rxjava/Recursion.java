@@ -4,12 +4,14 @@ package io.mlundela.rxjava;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
+import java.util.concurrent.TimeUnit;
+
 public class Recursion {
 
     private static int i = 1;
 
     public static void main(String[] args) throws InterruptedException {
-        process()
+        infiniteStream()
                 .subscribeOn(Schedulers.newThread())
                 .subscribe(
                         x -> System.out.println(Thread.currentThread().getName() + " - " + x),
@@ -19,25 +21,24 @@ public class Recursion {
 
         System.out.println(Thread.currentThread().getName() + " - Wait 10 seconds...");
         Thread.sleep(10000);
-        System.out.println(Thread.currentThread().getName() + " - Done");
+        System.out.println(Thread.currentThread().getName() + " - Terminated");
     }
 
-
-    private static Observable<Integer> process() {
-        Observable<Integer> obs = Observable.create(subscriber -> {
+    private static Observable<Integer> infiniteStream() {
+        return Observable.<Integer>create(subscriber -> {
             try {
                 Thread.sleep(500);
-                if (Math.random() < 0.2) {
-                    subscriber.onError(new RuntimeException("Failed for some strange reason..."));
+                if (Math.random() < 0.3) {
+                    subscriber.onError(new RuntimeException("Failed to compute next value"));
+                } else {
+                    subscriber.onNext(i++);
+                    subscriber.onCompleted();
                 }
-                subscriber.onNext(i++);
-                subscriber.onCompleted();
             } catch (InterruptedException e) {
                 subscriber.onError(e);
             }
-        });
-        return obs.retry((integer, throwable) -> {
-            System.out.println("Retry after error: " + throwable);
+        }).retry((integer, throwable) -> {
+            System.out.println("Retry after error: " + throwable.getMessage());
             return true;
         }).repeat();
     }
