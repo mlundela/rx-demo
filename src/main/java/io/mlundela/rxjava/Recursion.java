@@ -4,8 +4,6 @@ package io.mlundela.rxjava;
 import rx.Observable;
 import rx.schedulers.Schedulers;
 
-import java.util.concurrent.TimeUnit;
-
 public class Recursion {
 
     private static int i = 1;
