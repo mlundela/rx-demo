@@ -2,7 +2,8 @@ package io.mlundela.rxjava;
 
 
 import rx.Observable;
-import rx.schedulers.Schedulers;
+
+import java.util.concurrent.TimeUnit;
 
 public class Recursion {
 
@@ -10,7 +11,6 @@ public class Recursion {
 
     public static void main(String[] args) throws InterruptedException {
         infiniteStream()
-                .subscribeOn(Schedulers.newThread())
                 .subscribe(
                         x -> System.out.println(Thread.currentThread().getName() + " - " + x),
                         System.out::println,
@@ -24,20 +24,15 @@ public class Recursion {
 
     private static Observable<Integer> infiniteStream() {
         return Observable.<Integer>create(subscriber -> {
-            try {
-                Thread.sleep(500);
-                if (Math.random() < 0.3) {
-                    subscriber.onError(new RuntimeException("Failed to compute next value"));
-                } else {
-                    subscriber.onNext(i++);
-                    subscriber.onCompleted();
-                }
-            } catch (InterruptedException e) {
-                subscriber.onError(e);
+            if (Math.random() < 0.3) {
+                subscriber.onError(new RuntimeException("Failed to compute next value"));
+            } else {
+                subscriber.onNext(i++);
+                subscriber.onCompleted();
             }
         }).retry((integer, throwable) -> {
             System.out.println("Retry after error: " + throwable.getMessage());
             return true;
-        }).repeat();
+        }).delay(500, TimeUnit.MILLISECONDS).repeat();
     }
 }
